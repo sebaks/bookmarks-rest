@@ -36,9 +36,15 @@ $app->get('/bookmarks', function (Request $request, $limit) use ($app) {
     /** @var Doctrine\DBAL\Connection $db */
     $db = $app['db'];
 
-    $limit = (int)$request->get('limit', 20);
+    $limit = (int)$request->get('limit');
 
-    $bookmarks = $db->fetchAll("SELECT * FROM bookmarks ORDER BY id DESC LIMIT $limit");
+    $sql = "SELECT * FROM bookmarks ORDER BY id DESC";
+
+    if (!empty($limit)) {
+        $sql .= " LIMIT $limit";
+    }
+
+    $bookmarks = $db->fetchAll($sql);
 
     return $app->json($bookmarks);
 });
@@ -135,6 +141,7 @@ $app->post('/comments', function (Request $request) use ($app) {
     $db->insert('comments', $comment);
     $commentId = $db->lastInsertId();
 
+    unset($comment['bookmark_id']);
     $comment = ['id' => $commentId] + $comment;
 
     return $app->json($comment, 201);
@@ -159,11 +166,8 @@ $app->patch('/comments/{id}', function (Request $request, $id) use ($app) {
     }
 
     $ip = $request->getClientIp();
-    if ($comment['ip'] != $ip) {
+    if ($comment['ip'] != $ip || strtotime($comment['created_at']) + 3600 < time()) {
         $app->abort(403, 'You do not have permissions');
-    }
-    if (strtotime($comment['created_at']) + 3600 < time()) {
-        $app->abort(403, 'Edit time has expired');
     }
 
     $db->update('comments', ['text' => $text], ['id' => $id]);
@@ -185,11 +189,8 @@ $app->delete('/comments/{id}', function (Request $request, $id) use ($app) {
     }
 
     $ip = $request->getClientIp();
-    if ($comment['ip'] != $ip) {
+    if ($comment['ip'] != $ip || strtotime($comment['created_at']) + 3600 < time()) {
         $app->abort(403, 'You do not have permissions');
-    }
-    if (strtotime($comment['created_at']) + 3600 < time()) {
-        $app->abort(403, 'Edit time has expired');
     }
 
     $db->delete('comments', ['id' => $id]);
