@@ -1,0 +1,13 @@
+{
+    "name": "sebaks/bookmarks-rest",
+    "authors": [
+        {
+            "name": "sebaks",
+            "email": "d.kirillof@gmail.com"
+        }
+    ],
+    "require": {
+        "silex/silex": "^2.0",
+        "doctrine/dbal": "^2.5"
+    }
+}
